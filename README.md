@@ -6,3 +6,6 @@ sudo apt-get install qt4-dev-tools qt4-doc qt4-qtconfig qt4-demos qt4-designer
 sudo apt-get install python-qt4
 sudo apt-get install python-qt4-*
 sudo apt-get install python-qscintilla2
+
+
+3q
