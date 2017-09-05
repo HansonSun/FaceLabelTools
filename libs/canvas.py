@@ -234,13 +234,17 @@ class Canvas(QWidget):
     
     def set7PointsData(self,data):
         points=data.split(" ")
-        self.setRect(( int(points[0]),int(points[1]) ) ,(int(points[2]),int(points[3])))
-        self.setPoint( (int(points[4]),int(points[5])) )
-        self.setPoint( (int(points[6]),int(points[7])) )
-        self.setPoint( (int(points[8]),int(points[9])) )
-        self.setPoint( (int(points[10]),int(points[11])) )
-        self.setPoint( (int(points[12]),int(points[13])) )
-        self.update()
+        if(len(points))==4:
+            self.setRect(( int(points[0]),int(points[1]) ) ,(int(points[2]),int(points[3])))
+            self.update()
+        else:
+            self.setRect(( int(points[0]),int(points[1]) ) ,(int(points[2]),int(points[3])))
+            self.setPoint( (int(points[4]),int(points[5])) )
+            self.setPoint( (int(points[6]),int(points[7])) )
+            self.setPoint( (int(points[8]),int(points[9])) )
+            self.setPoint( (int(points[10]),int(points[11])) )
+            self.setPoint( (int(points[12]),int(points[13])) )
+            self.update()
 
     
     '''         

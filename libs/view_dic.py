@@ -13,44 +13,126 @@ FILETYPE_Face2Point=3
 FILETYPE_FaceRect=4
 FILETYPE_FaceBBox=5
 
-class Face2Point_and_Landmark (object):
-    def __init__(self,infor_file,mode=VIEW_MODE_UNLABELED):
-        #self.dic_item_template={"flag":0,path":"","left_top":[],"bottom_right":[],"eye_l":[0,0],"eye_r":[0,0],"nose":[0,0],"mouth_l":[0,0],"mouth_r":[0,0] }
-        self.infor_list=[]
-        self.view_index=[]  #used with view_mode
+
+class File_Input_Format(object):
+
+    def __init__(self,lable_file_path,view_mode=VIEW_MODE_UNLABELED):
+
+        self.selected_data_list=[]        #store selsected data
+        self.selected_data_list_index=[]  #store selsected index
+
         self.cur_flag=0
         self.counter=0
-        self.view_mode=mode
+        self.view_mode=view_mode
+
         f=open(infor_file,"r")
         
         for index,line in enumerate(f.readlines()):
             text= line.split(" ")
-            dic_item_template={}
+            
             if( int(text[1])==-1):
-                dic_item_template["path"]=text[0]
-                dic_item_template["flag"]=0
+                dic_item_template=parsr_infor_from_text(text)
+                dic_item_template["label_flag"]=0
                 if self.view_mode==VIEW_MODE_ALL or  self.view_mode==VIEW_MODE_UNLABELED:
-                    self.view_index.append(index)
+                    self.selected_data_list_index.append(index)
             else:
-                dic_item_template["path"]=text[0]
-                dic_item_template["flag"]=1
-                dic_item_template["left_top"]=(int(float(text[1])),int(float(text[2])) )
-                dic_item_template["bottom_right"]=(int(float(text[3])),int(float(text[4])) )
-                dic_item_template["eye_l"]=(int(float(text[5])),int(float(text[6])) )
-                dic_item_template["eye_r"]=(int(float(text[7])),int(float(text[8])) )
-                dic_item_template["nose"]=(int(float(text[9])),int(float(text[10])) )
-                dic_item_template["mouth_l"]=(int(float(text[11])),int(float(text[12])) )
-                dic_item_template["mouth_r"]=(int(float(text[13])),int(float(text[14])) )
+                dic_item_template=parsr_infor_from_text(text)
+
                 if self.view_mode==VIEW_MODE_LABELED or self.view_mode==VIEW_MODE_RANDOM or self.view_mode==VIEW_MODE_ALL:
-                    self.view_index.append(index)
+                    self.selected_data_list_index.append(index)
                     
-            self.infor_list.append(dic_item_template)
+            self.choosed_data_list.append(dic_item_template)#store all the selected data
             
         if  self.view_mode==VIEW_MODE_RANDOM:
-            self.view_index=random.sample(self.view_index,1000)
+            self.selected_data_list_index=random.sample(self.selected_data_list_index,1000)
       
+    def parsr_infor_from_text(text):
+        dic_item_template={}
+        return dic_item_template
+
     def read(self):
         pass
+    
+    def set_data(self,key,data):
+        data=data.split(" ")
+        index=self.view_index[key]
+        self.infor_list[index]["flag"]=1
+        self.infor_list[index]["left_top"]=(int(data[0]),int(data[1]) )
+        self.infor_list[index]["bottom_right"]=(int(data[2]),int(data[3]) )
+
+    
+    def get_data(self,key):
+        item=self.infor_list[self.view_index[key]]
+        output="%d %d %d %d %d %d %d %d %d %d %d %d %d %d\n"%( \
+                item["left_top"][0],item["left_top"][1],item["bottom_right"][0],item["bottom_right"][1], 
+                item["eye_l"][0],item["eye_l"][1],item["eye_r"][0],item["eye_r"][1],item["nose"][0],item["nose"][1], 
+                item["mouth_l"][0],item["mouth_l"][1],item["mouth_r"][0],item["mouth_r"][1])
+        return output
+    
+    
+    def is_setValue(self,key):
+        return self.infor_list[self.view_index[key]]["flag"]
+    
+    def save_file(self):
+        f=open("resultnew.txt","w")
+        for item in self.infor_list:
+            if( item["flag"]==0):
+                output="%s %d\n"%(item["path"],-1)
+            else:
+                output="%s %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n"%( \
+                item["path"],item["left_top"][0],item["left_top"][1],item["bottom_right"][0],item["bottom_right"][1], 
+                item["eye_l"][0],item["eye_l"][1],item["eye_r"][0],item["eye_r"][1],item["nose"][0],item["nose"][1], 
+                item["mouth_l"][0],item["mouth_l"][1],item["mouth_r"][0],item["mouth_r"][1])
+            f.write( output )
+        f.close() 
+    
+    def disply(self):
+        for item in self.view_index:
+            print self.infor_list[item]
+
+        
+    def __getitem__(self, key):
+        return self.infor_list[self.view_index[key]]
+    
+    def __iter__(self):
+        return self
+
+    def next(self): 
+        if self.counter > len( self.view_index)-1 or len( self.view_index)==0:
+            self.counter=0 
+            raise StopIteration();
+        self.counter+=1
+        return self.infor_list[self.view_index[self.counter-1]]
+    
+    def __len__(self):
+        return len(self.view_index)
+   
+
+class Face2Point_and_Landmark (File_Input_Format):
+
+    def __init__(self,infor_file,mode=VIEW_MODE_UNLABELED):
+        super(Face2Point_and_Landmark, self).__init__(infor_file,mode)
+
+    def parsr_infor_from_text(text):
+        dic_item_template={}
+        text_list=text.split(" ")
+
+        if( int(text[1])==-1):
+            dic_item_template["path"]=text[0]
+            dic_item_template["flag"]=0
+
+        else:
+            dic_item_template["path"]=text[0]
+            dic_item_template["flag"]=1
+            dic_item_template["left_top"]=(int(float(text[1])),int(float(text[2])) )
+            dic_item_template["bottom_right"]=(int(float(text[3])),int(float(text[4])) )
+            dic_item_template["eye_l"]=(int(float(text[5])),int(float(text[6])) )
+            dic_item_template["eye_r"]=(int(float(text[7])),int(float(text[8])) )
+            dic_item_template["nose"]=(int(float(text[9])),int(float(text[10])) )
+            dic_item_template["mouth_l"]=(int(float(text[11])),int(float(text[12])) )
+            dic_item_template["mouth_r"]=(int(float(text[13])),int(float(text[14])) )
+        return dic_item_template
+
     
     def set_data(self,key,data):
         data=data.split(" ")
@@ -71,10 +153,7 @@ class Face2Point_and_Landmark (object):
                 item["eye_l"][0],item["eye_l"][1],item["eye_r"][0],item["eye_r"][1],item["nose"][0],item["nose"][1], 
                 item["mouth_l"][0],item["mouth_l"][1],item["mouth_r"][0],item["mouth_r"][1])
         return output
-    
-    
-    def is_setValue(self,key):
-        return self.infor_list[self.view_index[key]]["flag"]
+
     
     def save_file(self):
         f=open("resultnew.txt","w")
@@ -89,66 +168,34 @@ class Face2Point_and_Landmark (object):
             f.write( output )
         f.close() 
     
-    def disply(self):
-        for item in self.view_index:
-            print self.infor_list[item]
-
-        
-    def __getitem__(self, key):
-        return self.infor_list[self.view_index[key]]
-    
-    def __iter__(self):
-        return self
-
-    def next(self): 
-        if self.counter > len( self.view_index)-1 or len( self.view_index)==0:
-            self.counter=0 
-            raise StopIteration();
-        self.counter+=1
-        return self.infor_list[self.view_index[self.counter-1]]
-    
-    def __len__(self):
-        return len(self.view_index)
     
 
-class FaceRect_and_Landmark (object):
+class FaceRect_and_Landmark (File_Input_Format):
+
     def __init__(self,infor_file,mode=VIEW_MODE_UNLABELED):
-        #self.dic_item_template={"flag":0,path":"","left_top":[],"bottom_right":[],"eye_l":[0,0],"eye_r":[0,0],"nose":[0,0],"mouth_l":[0,0],"mouth_r":[0,0] }
-        self.infor_list=[]
-        self.view_index=[]  #used with view_mode
-        self.cur_flag=0
-        self.counter=0
-        self.view_mode=mode
-        f=open(infor_file,"r")
-        
-        for index,line in enumerate(f.readlines()):
-            text= line.split(" ")
-            dic_item_template={}
-            if( int(text[1])==-1):
-                dic_item_template["path"]=text[0]
-                dic_item_template["flag"]=0
-                if self.view_mode==VIEW_MODE_ALL or  self.view_mode==VIEW_MODE_UNLABELED:
-                    self.view_index.append(index)
-            else:
-                dic_item_template["path"]=text[0]
-                dic_item_template["flag"]=1
-                dic_item_template["left_top"]=( int(text[1]),int(text[2]) ) 
-                dic_item_template["bottom_right"]=( int(text[1])+int(text[3]), int(text[2])+int(text[4]) )
-                dic_item_template["eye_l"]=(int(text[5]),int(text[6]) )
-                dic_item_template["eye_r"]=(int(text[7]),int(text[8]) )
-                dic_item_template["nose"]=(int(text[9]),int(text[10]) )
-                dic_item_template["mouth_l"]=(int(text[11]),int(text[12]) )
-                dic_item_template["mouth_r"]=(int(text[13]),int(text[14]) )
-                if self.view_mode==VIEW_MODE_LABELED or self.view_mode==VIEW_MODE_RANDOM or self.view_mode==VIEW_MODE_ALL:
-                    self.view_index.append(index)
-                    
-            self.infor_list.append(dic_item_template)
-            
-        if  self.view_mode==VIEW_MODE_RANDOM:
-            self.view_index=random.sample(self.view_index,1000)
-      
-    def read(self):
-        pass
+        super(FaceRect_and_Landmark, self).__init__(infor_file,mode)
+
+
+
+    def parsr_infor_from_text(text):
+        dic_item_template={}
+        text_list=text.split(" ")
+
+        if( int(text[1])==-1):
+            dic_item_template["path"]=text[0]
+            dic_item_template["flag"]=0
+
+        else:
+            dic_item_template["path"]=text[0]
+            dic_item_template["flag"]=1
+            dic_item_template["left_top"]=(int(float(text[1])),int(float(text[2])) )
+            dic_item_template["bottom_right"]=(int(float(text[3])),int(float(text[4])) )
+            dic_item_template["eye_l"]=(int(float(text[5])),int(float(text[6])) )
+            dic_item_template["eye_r"]=(int(float(text[7])),int(float(text[8])) )
+            dic_item_template["nose"]=(int(float(text[9])),int(float(text[10])) )
+            dic_item_template["mouth_l"]=(int(float(text[11])),int(float(text[12])) )
+            dic_item_template["mouth_r"]=(int(float(text[13])),int(float(text[14])) )
+        return dic_item_template
     
     def set_data(self,key,data):
         data=data.split(" ")
@@ -171,9 +218,7 @@ class FaceRect_and_Landmark (object):
         return output
     
     
-    def is_setValue(self,key):
-        return self.infor_list[self.view_index[key]]["flag"]
-    
+
     def save_file(self):
         f=open("resultnew.txt","w")
         for item in self.infor_list:
@@ -187,65 +232,34 @@ class FaceRect_and_Landmark (object):
             f.write( output )
         f.close() 
     
-    def disply(self):
-        for item in self.view_index:
-            print self.infor_list[item]
-
-        
-    def __getitem__(self, key):
-        return self.infor_list[self.view_index[key]]
-    
-    def __iter__(self):
-        return self
-
-    def next(self): 
-        if self.counter > len( self.view_index)-1 or len( self.view_index)==0:
-            self.counter=0 
-            raise StopIteration();
-        self.counter+=1
-        return self.infor_list[self.view_index[self.counter-1]]
-    
-    def __len__(self):
-        return len(self.view_index)
 
 
-class FaceBBox_and_Landmark (object):
+class FaceBBox_and_Landmark (File_Input_Format):
     def __init__(self,infor_file,mode=VIEW_MODE_UNLABELED):
-        self.infor_list=[]
-        self.view_index=[]  #used with view_mode
-        self.cur_flag=0
-        self.counter=0
-        self.view_mode=mode
-        f=open(infor_file,"r")
+        super(FaceBBox_and_Landmark, self).__init__(infor_file,mode)
         
-        for index,line in enumerate(f.readlines()):
-            text= line.split(" ")
-            dic_item_template={}
-            if( int(text[1])==-1):
-                dic_item_template["path"]=text[0]
-                dic_item_template["flag"]=0
-                if self.view_mode==VIEW_MODE_ALL or  self.view_mode==VIEW_MODE_UNLABELED:
-                    self.view_index.append(index)
-            else:
-                dic_item_template["path"]=text[0]
-                dic_item_template["flag"]=1
-                dic_item_template["left_top"]=(int(float(text[1])),int(float(text[3])) )
-                dic_item_template["bottom_right"]=(int(float(text[2])),int(float(text[4])) )
-                dic_item_template["eye_l"]=(int(float(text[5])),int(float(text[6])) )
-                dic_item_template["eye_r"]=(int(float(text[7])),int(float(text[8])) )
-                dic_item_template["nose"]=(int(float(text[9])),int(float(text[10])) )
-                dic_item_template["mouth_l"]=(int(float(text[11])),int(float(text[12])) )
-                dic_item_template["mouth_r"]=(int(float(text[13])),int(float(text[14])) )
-                if self.view_mode==VIEW_MODE_LABELED or self.view_mode==VIEW_MODE_RANDOM or self.view_mode==VIEW_MODE_ALL:
-                    self.view_index.append(index)
-                    
-            self.infor_list.append(dic_item_template)
-            
-        if  self.view_mode==VIEW_MODE_RANDOM:
-            self.view_index=random.sample(self.view_index,1000)
-      
     def read(self):
         pass
+
+    def parsr_infor_from_text(text):
+        dic_item_template={}
+        text_list=text.split(" ")
+
+        if( int(text[1])==-1):
+            dic_item_template["path"]=text[0]
+            dic_item_template["flag"]=0
+
+        else:
+            dic_item_template["path"]=text[0]
+            dic_item_template["flag"]=1
+            dic_item_template["left_top"]=(int(float(text[1])),int(float(text[2])) )
+            dic_item_template["bottom_right"]=(int(float(text[3])),int(float(text[4])) )
+            dic_item_template["eye_l"]=(int(float(text[5])),int(float(text[6])) )
+            dic_item_template["eye_r"]=(int(float(text[7])),int(float(text[8])) )
+            dic_item_template["nose"]=(int(float(text[9])),int(float(text[10])) )
+            dic_item_template["mouth_l"]=(int(float(text[11])),int(float(text[12])) )
+            dic_item_template["mouth_r"]=(int(float(text[13])),int(float(text[14])) )
+        return dic_item_template
     
     def set_data(self,key,data):
         data=data.split(" ")
@@ -267,10 +281,6 @@ class FaceBBox_and_Landmark (object):
                 item["mouth_l"][0],item["mouth_l"][1],item["mouth_r"][0],item["mouth_r"][1])
         return output
     
-    
-    def is_setValue(self,key):
-        return self.infor_list[self.view_index[key]]["flag"]
-    
     def save_file(self):
         f=open("resultnew.txt","w")
         for item in self.infor_list:
@@ -283,67 +293,34 @@ class FaceBBox_and_Landmark (object):
                 item["mouth_l"][0],item["mouth_l"][1],item["mouth_r"][0],item["mouth_r"][1])
             f.write( output )
         f.close() 
-    
-    def disply(self):
-        for item in self.view_index:
-            print self.infor_list[item]
-
-        
-    def __getitem__(self, key):
-        return self.infor_list[self.view_index[key]]
-    
-    def __iter__(self):
-        return self
-
-    def next(self): 
-        if self.counter > len( self.view_index)-1 or len( self.view_index)==0:
-            self.counter=0 
-            raise StopIteration();
-        self.counter+=1
-        return self.infor_list[self.view_index[self.counter-1]]
-    
-    def __len__(self):
-        return len(self.view_index)
    
 
-class Face2Point (object):
+class Face2Point (File_Input_Format):
     def __init__(self,infor_file,mode=VIEW_MODE_UNLABELED):
-        #self.dic_item_template={"flag":0,path":"","left_top":[],"bottom_right":[],"eye_l":[0,0],"eye_r":[0,0],"nose":[0,0],"mouth_l":[0,0],"mouth_r":[0,0] }
-        self.infor_list=[]
-        self.view_index=[]  #used with view_mode
-        self.cur_flag=0
-        self.counter=0
-        self.view_mode=mode
-        f=open(infor_file,"r")
+        super(Face2Point, self).__init__(infor_file,mode)
         
-        for index,line in enumerate(f.readlines()):
-            text= line.split(" ")
-            dic_item_template={}
-            if( int(text[1])==-1):
-                dic_item_template["path"]=text[0]
-                dic_item_template["flag"]=0
-                if self.view_mode==VIEW_MODE_ALL or  self.view_mode==VIEW_MODE_UNLABELED:
-                    self.view_index.append(index)
-            else:
-                dic_item_template["path"]=text[0]
-                dic_item_template["flag"]=1
-                dic_item_template["left_top"]=(int(float(text[1])),int(float(text[2])) )
-                dic_item_template["bottom_right"]=(int(float(text[3])),int(float(text[4])) )
-                dic_item_template["eye_l"]=(int(float(text[5])),int(float(text[6])) )
-                dic_item_template["eye_r"]=(int(float(text[7])),int(float(text[8])) )
-                dic_item_template["nose"]=(int(float(text[9])),int(floa(text[10])) )
-                dic_item_template["mouth_l"]=(int(float(text[11])),int(float(text[12])) )
-                dic_item_template["mouth_r"]=(int(float(text[13])),int(float(text[14])) )
-                if self.view_mode==VIEW_MODE_LABELED or self.view_mode==VIEW_MODE_RANDOM or self.view_mode==VIEW_MODE_ALL:
-                    self.view_index.append(index)
-                    
-            self.infor_list.append(dic_item_template)
-            
-        if  self.view_mode==VIEW_MODE_RANDOM:
-            self.view_index=random.sample(self.view_index,1000)
-      
     def read(self):
         pass
+
+    def parsr_infor_from_text(text):
+        dic_item_template={}
+        text_list=text.split(" ")
+
+        if( int(text[1])==-1):
+            dic_item_template["path"]=text[0]
+            dic_item_template["flag"]=0
+
+        else:
+            dic_item_template["path"]=text[0]
+            dic_item_template["flag"]=1
+            dic_item_template["left_top"]=(int(float(text[1])),int(float(text[2])) )
+            dic_item_template["bottom_right"]=(int(float(text[3])),int(float(text[4])) )
+            dic_item_template["eye_l"]=(int(float(text[5])),int(float(text[6])) )
+            dic_item_template["eye_r"]=(int(float(text[7])),int(float(text[8])) )
+            dic_item_template["nose"]=(int(float(text[9])),int(float(text[10])) )
+            dic_item_template["mouth_l"]=(int(float(text[11])),int(float(text[12])) )
+            dic_item_template["mouth_r"]=(int(float(text[13])),int(float(text[14])) )
+        return dic_item_template
     
     def set_data(self,key,data):
         data=data.split(" ")
@@ -351,11 +328,7 @@ class Face2Point (object):
         self.infor_list[index]["flag"]=1
         self.infor_list[index]["left_top"]=(int(data[0]),int(data[1]) )
         self.infor_list[index]["bottom_right"]=(int(data[2]),int(data[3]) )
-        self.infor_list[index]["eye_l"]=(int(data[4]),int(data[5]) )
-        self.infor_list[index]["eye_r"]=(int(data[6]),int(data[7]) )
-        self.infor_list[index]["nose"]=(int(data[8]),int(data[9]) )
-        self.infor_list[index]["mouth_l"]=(int(data[10]),int(data[11]) )
-        self.infor_list[index]["mouth_r"]=(int(data[12]),int(data[13]) )
+
     
     def get_data(self,key):
         item=self.infor_list[self.view_index[key]]
@@ -365,9 +338,6 @@ class Face2Point (object):
                 item["mouth_l"][0],item["mouth_l"][1],item["mouth_r"][0],item["mouth_r"][1])
         return output
     
-    
-    def is_setValue(self,key):
-        return self.infor_list[self.view_index[key]]["flag"]
     
     def save_file(self):
         f=open("resultnew.txt","w")
@@ -382,66 +352,30 @@ class Face2Point (object):
             f.write( output )
         f.close() 
     
-    def disply(self):
-        for item in self.view_index:
-            print self.infor_list[item]
-
-        
-    def __getitem__(self, key):
-        return self.infor_list[self.view_index[key]]
-    
-    def __iter__(self):
-        return self
-
-    def next(self): 
-        if self.counter > len( self.view_index)-1 or len( self.view_index)==0:
-            self.counter=0 
-            raise StopIteration();
-        self.counter+=1
-        return self.infor_list[self.view_index[self.counter-1]]
-    
-    def __len__(self):
-        return len(self.view_index)
    
 
 class FaceRect (object):
     def __init__(self,infor_file,mode=VIEW_MODE_UNLABELED):
-        #self.dic_item_template={"flag":0,path":"","left_top":[],"bottom_right":[],"eye_l":[0,0],"eye_r":[0,0],"nose":[0,0],"mouth_l":[0,0],"mouth_r":[0,0] }
-        self.infor_list=[]
-        self.view_index=[]  #used with view_mode
-        self.cur_flag=0
-        self.counter=0
-        self.view_mode=mode
-        f=open(infor_file,"r")
+        super(FaceRect, self).__init__(infor_file,mode)
         
-        for index,line in enumerate(f.readlines()):
-            text= line.split(" ")
-            dic_item_template={}
-            if( int(text[1])==-1):
-                dic_item_template["path"]=text[0]
-                dic_item_template["flag"]=0
-                if self.view_mode==VIEW_MODE_ALL or  self.view_mode==VIEW_MODE_UNLABELED:
-                    self.view_index.append(index)
-            else:
-                dic_item_template["path"]=text[0]
-                dic_item_template["flag"]=1
-                dic_item_template["left_top"]=(int(float(text[1])),int(float(text[2])) )
-                dic_item_template["bottom_right"]=(int(float(text[3])),int(float(text[4])) )
-                dic_item_template["eye_l"]=(int(float(text[5])),int(float(text[6])) )
-                dic_item_template["eye_r"]=(int(float(text[7])),int(float(text[8])) )
-                dic_item_template["nose"]=(int(float(text[9])),int(float(text[10])) )
-                dic_item_template["mouth_l"]=(int(float(text[11])),int(float(text[12])) )
-                dic_item_template["mouth_r"]=(int(float(text[13])),int(float(text[14])) )
-                if self.view_mode==VIEW_MODE_LABELED or self.view_mode==VIEW_MODE_RANDOM or self.view_mode==VIEW_MODE_ALL:
-                    self.view_index.append(index)
-                    
-            self.infor_list.append(dic_item_template)
-            
-        if  self.view_mode==VIEW_MODE_RANDOM:
-            self.view_index=random.sample(self.view_index,1000)
-      
     def read(self):
         pass
+
+    def parsr_infor_from_text(text):
+        dic_item_template={}
+        text_list=text.split(" ")
+
+        if( int(text[1])==-1):
+            dic_item_template["path"]=text[0]
+            dic_item_template["flag"]=0
+
+        else:
+            dic_item_template["path"]=text[0]
+            dic_item_template["flag"]=1
+            dic_item_template["left_top"]=(int(float(text[1])),int(float(text[2])) )
+            dic_item_template["bottom_right"]=(int(float(text[3])),int(float(text[4])) )
+
+        return dic_item_template
     
     def set_data(self,key,data):
         data=data.split(" ")
@@ -449,23 +383,13 @@ class FaceRect (object):
         self.infor_list[index]["flag"]=1
         self.infor_list[index]["left_top"]=(int(data[0]),int(data[1]) )
         self.infor_list[index]["bottom_right"]=(int(data[2]),int(data[3]) )
-        self.infor_list[index]["eye_l"]=(int(data[4]),int(data[5]) )
-        self.infor_list[index]["eye_r"]=(int(data[6]),int(data[7]) )
-        self.infor_list[index]["nose"]=(int(data[8]),int(data[9]) )
-        self.infor_list[index]["mouth_l"]=(int(data[10]),int(data[11]) )
-        self.infor_list[index]["mouth_r"]=(int(data[12]),int(data[13]) )
     
     def get_data(self,key):
         item=self.infor_list[self.view_index[key]]
-        output="%d %d %d %d %d %d %d %d %d %d %d %d %d %d\n"%( \
-                item["left_top"][0],item["left_top"][1],item["bottom_right"][0],item["bottom_right"][1], 
-                item["eye_l"][0],item["eye_l"][1],item["eye_r"][0],item["eye_r"][1],item["nose"][0],item["nose"][1], 
-                item["mouth_l"][0],item["mouth_l"][1],item["mouth_r"][0],item["mouth_r"][1])
+        output="%d %d %d %d\n"%( \
+                item["left_top"][0],item["left_top"][1],item["bottom_right"][0],item["bottom_right"][1])
         return output
     
-    
-    def is_setValue(self,key):
-        return self.infor_list[self.view_index[key]]["flag"]
     
     def save_file(self):
         f=open("resultnew.txt","w")
@@ -473,73 +397,32 @@ class FaceRect (object):
             if( item["flag"]==0):
                 output="%s %d\n"%(item["path"],-1)
             else:
-                output="%s %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n"%( \
-                item["path"],item["left_top"][0],item["left_top"][1],item["bottom_right"][0],item["bottom_right"][1], 
-                item["eye_l"][0],item["eye_l"][1],item["eye_r"][0],item["eye_r"][1],item["nose"][0],item["nose"][1], 
-                item["mouth_l"][0],item["mouth_l"][1],item["mouth_r"][0],item["mouth_r"][1])
+                output="%s %d %d %d %d\n"%( \
+                item["path"],item["left_top"][0],item["left_top"][1],item["bottom_right"][0],item["bottom_right"][1])
             f.write( output )
         f.close() 
     
-    def disply(self):
-        for item in self.view_index:
-            print self.infor_list[item]
 
-        
-    def __getitem__(self, key):
-        return self.infor_list[self.view_index[key]]
-    
-    def __iter__(self):
-        return self
-
-    def next(self): 
-        if self.counter > len( self.view_index)-1 or len( self.view_index)==0:
-            self.counter=0 
-            raise StopIteration();
-        self.counter+=1
-        return self.infor_list[self.view_index[self.counter-1]]
-    
-    def __len__(self):
-        return len(self.view_index)
-   
 
 class FaceBBox (object):
     def __init__(self,infor_file,mode=VIEW_MODE_UNLABELED):
-        #self.dic_item_template={"flag":0,path":"","left_top":[],"bottom_right":[],"eye_l":[0,0],"eye_r":[0,0],"nose":[0,0],"mouth_l":[0,0],"mouth_r":[0,0] }
-        self.infor_list=[]
-        self.view_index=[]  #used with view_mode
-        self.cur_flag=0
-        self.counter=0
-        self.view_mode=mode
-        f=open(infor_file,"r")
+        super(FaceBBox, self).__init__(infor_file,mode)
         
-        for index,line in enumerate(f.readlines()):
-            text= line.split(" ")
-            dic_item_template={}
-            if( int(text[1])==-1):
-                dic_item_template["path"]=text[0]
-                dic_item_template["flag"]=0
-                if self.view_mode==VIEW_MODE_ALL or  self.view_mode==VIEW_MODE_UNLABELED:
-                    self.view_index.append(index)
-            else:
-                dic_item_template["path"]=text[0]
-                dic_item_template["flag"]=1
-                dic_item_template["left_top"]=(int(float(text[1])),int(float(text[2])) )
-                dic_item_template["bottom_right"]=(int(float(text[3])),int(float(text[4])) )
-                dic_item_template["eye_l"]=(int(float(text[5])),int(float(text[6])) )
-                dic_item_template["eye_r"]=(int(float(text[7])),int(float(text[8])) )
-                dic_item_template["nose"]=(int(float(text[9])),int(float(text[10])) )
-                dic_item_template["mouth_l"]=(int(float(text[11])),int(float(text[12])) )
-                dic_item_template["mouth_r"]=(int(float(text[13])),int(float(text[14])) )
-                if self.view_mode==VIEW_MODE_LABELED or self.view_mode==VIEW_MODE_RANDOM or self.view_mode==VIEW_MODE_ALL:
-                    self.view_index.append(index)
-                    
-            self.infor_list.append(dic_item_template)
-            
-        if  self.view_mode==VIEW_MODE_RANDOM:
-            self.view_index=random.sample(self.view_index,1000)
-      
-    def read(self):
-        pass
+
+    def parsr_infor_from_text(text):
+        dic_item_template={}
+        text_list=text.split(" ")
+
+        if( int(text[1])==-1):
+            dic_item_template["path"]=text[0]
+            dic_item_template["flag"]=0
+
+        else:
+            dic_item_template["path"]=text[0]
+            dic_item_template["flag"]=1
+            dic_item_template["left_top"]=(int(float(text[1])),int(float(text[2])) )
+            dic_item_template["bottom_right"]=(int(float(text[3])),int(float(text[4])) )
+        return dic_item_template
     
     def set_data(self,key,data):
         data=data.split(" ")
@@ -547,23 +430,14 @@ class FaceBBox (object):
         self.infor_list[index]["flag"]=1
         self.infor_list[index]["left_top"]=(int(data[0]),int(data[1]) )
         self.infor_list[index]["bottom_right"]=(int(data[2]),int(data[3]) )
-        self.infor_list[index]["eye_l"]=(int(data[4]),int(data[5]) )
-        self.infor_list[index]["eye_r"]=(int(data[6]),int(data[7]) )
-        self.infor_list[index]["nose"]=(int(data[8]),int(data[9]) )
-        self.infor_list[index]["mouth_l"]=(int(data[10]),int(data[11]) )
-        self.infor_list[index]["mouth_r"]=(int(data[12]),int(data[13]) )
+
     
     def get_data(self,key):
         item=self.infor_list[self.view_index[key]]
-        output="%d %d %d %d %d %d %d %d %d %d %d %d %d %d\n"%( \
-                item["left_top"][0],item["left_top"][1],item["bottom_right"][0],item["bottom_right"][1], 
-                item["eye_l"][0],item["eye_l"][1],item["eye_r"][0],item["eye_r"][1],item["nose"][0],item["nose"][1], 
-                item["mouth_l"][0],item["mouth_l"][1],item["mouth_r"][0],item["mouth_r"][1])
+        output="%d %d %d %d %d\n"%( \
+                item["left_top"][0],item["left_top"][1],item["bottom_right"][0],item["bottom_right"][1])
         return output
     
-    
-    def is_setValue(self,key):
-        return self.infor_list[self.view_index[key]]["flag"]
     
     def save_file(self):
         f=open("resultnew.txt","w")
@@ -571,33 +445,12 @@ class FaceBBox (object):
             if( item["flag"]==0):
                 output="%s %d\n"%(item["path"],-1)
             else:
-                output="%s %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n"%( \
-                item["path"],item["left_top"][0],item["left_top"][1],item["bottom_right"][0],item["bottom_right"][1], 
-                item["eye_l"][0],item["eye_l"][1],item["eye_r"][0],item["eye_r"][1],item["nose"][0],item["nose"][1], 
-                item["mouth_l"][0],item["mouth_l"][1],item["mouth_r"][0],item["mouth_r"][1])
+                output="%s %d %d %d %d\n"%( \
+                item["path"],item["left_top"][0],item["left_top"][1],item["bottom_right"][0],item["bottom_right"][1]);
             f.write( output )
         f.close() 
     
-    def disply(self):
-        for item in self.view_index:
-            print self.infor_list[item]
 
-        
-    def __getitem__(self, key):
-        return self.infor_list[self.view_index[key]]
-    
-    def __iter__(self):
-        return self
-
-    def next(self): 
-        if self.counter > len( self.view_index)-1 or len( self.view_index)==0:
-            self.counter=0 
-            raise StopIteration();
-        self.counter+=1
-        return self.infor_list[self.view_index[self.counter-1]]
-    
-    def __len__(self):
-        return len(self.view_index)
 
 def ViewDict(infor_file,filetype=FILETYPE_Face2Point_and_Landmark,mode=VIEW_MODE_UNLABELED):
     if(filetype==FILETYPE_Face2Point_and_Landmark):
