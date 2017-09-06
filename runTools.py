@@ -32,7 +32,8 @@ class MainWindow(QMainWindow,WindowMixin):
         self.canvas = Canvas()
         self.setCentralWidget(self.canvas)
         self.view_mode=0
-        self.pic_view_flag=0
+        
+        self.pic_view_pos=0
         self.img_list=[]
         self.img_solve_mode=IMG_EDIT_MODE
         self.statusBar()
@@ -64,6 +65,27 @@ class MainWindow(QMainWindow,WindowMixin):
 
         self.addToolBar(Qt.LeftToolBarArea,opentoolbar)
         
+    def load_last_pos(self):
+        if os.path.exists("config/last_pos.txt"):
+            stat=QMessageBox.information(None, "care", "do you want to back to last postion!!", QMessageBox.Yes | QMessageBox.No)
+            if stat== QMessageBox.Yes:
+                with open("config/last_pos.txt","r") as f:
+                    print "read"
+                    pos=f.read()
+                    print pos
+                    print "load position %s sucessfully"%pos
+                    return int(pos)
+            else: 
+                os.remove("config/last_pos.txt")
+                return 0
+        else:
+            return 0
+
+
+
+    def save_last_pos(self,pos):
+        with open("config/last_pos.txt","w") as f:
+            f.write(str(pos))
 
     def openfile(self):
         self.view_mode=1
@@ -124,7 +146,7 @@ class MainWindow(QMainWindow,WindowMixin):
             elif self.img_solve_mode==IMG_VIEW_MODE:
                 canvas7points= self.canvas.get7PointsData()
                 if len(self.canvas.get7PointsData().split(" ")) ==14:
-                    self.viewdict.set_data(self.pic_view_flag, canvas7points)
+                    self.viewdict.set_data(self.pic_view_pos, canvas7points)
                     QMessageBox.warning(self, "infor", "save sucess")
                 else:
                     QMessageBox.warning(self, "infor", "please put 7 point")
@@ -132,40 +154,50 @@ class MainWindow(QMainWindow,WindowMixin):
                 
     def nextPic(self):
         dict_len=len(self.viewdict)
-        self.pic_view_flag=(self.pic_view_flag+1) if self.pic_view_flag<dict_len-1 else dict_len-1
-        self.canvas.loadPixmap( self.viewdict[self.pic_view_flag]["path"] ) 
+        self.pic_view_pos=(self.pic_view_pos+1) if self.pic_view_pos<dict_len-1 else dict_len-1
+        self.canvas.loadPixmap( self.viewdict[self.pic_view_pos]["path"] ) 
 
-        if self.viewdict.is_setValue(self.pic_view_flag):
-            self.canvas.set7PointsData( self.viewdict.get_data(self.pic_view_flag) )
+        if self.viewdict.is_setValue(self.pic_view_pos):
+            self.canvas.set7PointsData( self.viewdict.get_data(self.pic_view_pos) )
             
             if self.total_num==0:
                 self.total_num-= 0 
             else:
                 self.total_num-= 1 
             print self.total_num ,"left "   
+        self.save_last_pos(self.pic_view_pos)
         
     def prevPic(self):
-        self.pic_view_flag =  (self.pic_view_flag-1) if self.pic_view_flag>=1 else 0
-        self.canvas.loadPixmap( self.viewdict[self.pic_view_flag]["path"] ) 
+        the_last_pos=self.pic_view_pos
+        self.pic_view_pos =  (self.pic_view_pos-1) if self.pic_view_pos>=1 else 0
+        self.canvas.loadPixmap( self.viewdict[self.pic_view_pos]["path"] ) 
         
-        if self.viewdict.is_setValue(self.pic_view_flag):
-            self.canvas.set7PointsData( self.viewdict.get_data(self.pic_view_flag) )
+        if self.viewdict.is_setValue(self.pic_view_pos):
+            self.canvas.set7PointsData( self.viewdict.get_data(self.pic_view_pos) )
             
-            if self.total_num==1000:
-                self.total_num+= 0 
+            if the_last_pos==0 :
+                self.total_num+= 0   
             else:
                 self.total_num+= 1 
-            print self.total_num  ,"left "      
+
+            print self.total_num  ,"left "  
+            self.save_last_pos(self.pic_view_pos)    
     
     def viewMode(self):
+
+
         ret_sta=QMessageBox.information(None, "care", "do you want reset mode!!", QMessageBox.Yes | QMessageBox.No)
         if ret_sta== QMessageBox.Yes:
+            self.pic_view_pos=self.load_last_pos()
+
             self.img_solve_mode=IMG_VIEW_MODE
-            self.viewdict=ViewDict("hand_lfw_result.txt",FILETYPE_Face2Point_and_Landmark,VIEW_MODE_ALL) 
-            self.canvas.loadPixmap( self.viewdict[self.pic_view_flag]["path"] ) 
+            self.viewdict=ViewDict("testImageList.txt","input_rules/xy_BBox_5PointsLandmark.txt",VIEW_MODE_ALL) 
+            print self.viewdict[self.pic_view_pos]["path"]
+            self.canvas.loadPixmap( self.viewdict[self.pic_view_pos]["path"] ) 
             
-            if self.viewdict.is_setValue(self.pic_view_flag):
-                self.canvas.set7PointsData( self.viewdict.get_data(self.pic_view_flag) )
+            if self.viewdict.is_setValue(self.pic_view_pos):
+                self.canvas.set7PointsData( self.viewdict.get_data(self.pic_view_pos) )
+
             self.total_num=len( self.viewdict  )
             print "total num :",self.total_num
         else :
