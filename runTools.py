@@ -9,6 +9,7 @@ from canvas import *
 from inputDlg import *
 import time
 from view_dic import  *
+from ruleWidget import *
 
 
 IMG_VIEW_MODE=0
@@ -29,42 +30,59 @@ class MainWindow(QMainWindow,WindowMixin):
     def __init__(self,parent=None):
         super(MainWindow,self).__init__(parent)
         
-        self.canvas = Canvas()
-        self.setCentralWidget(self.canvas)
         self.view_mode=0
-        
         self.pic_view_pos=0
         self.img_list=[]
         self.img_solve_mode=IMG_EDIT_MODE
+
+        self.initUI()
+
+    def initUI(self):
+
+        #init the canvas 
+        self.canvas = Canvas()
+        self.setCentralWidget(self.canvas)
+
+        #init the toolbar
         self.statusBar()
-        self.openPic_action=newAction(self, "openfile", self.openfile, "Ctrl+E", "./icons/open.png","openfile")
-        self.setPoint_action=newAction(self, "setPoint", self.setPoint, "Ctrl+Q", "./icons/line.png","drawLine")
-        self.drawPoint_action=newAction(self, "drawPoint", self.drawPoint, "Ctrl+W", "./icons/point.png","drawPoint")
-        self.setRect_action=newAction(self, "setRect", self.setRect, "Ctrl+R", "./icons/circle.png","drawCircle")
-        self.drawRect_action=newAction(self, "drawRect", self.drawRect, "Ctrl+T", "./icons/done.png","drawRect")
-        
-        self.nextPic_action=newAction(self, "nextPic", self.nextPic, "Ctrl+E", "./icons/next.png","nextPic")
-        self.prevPic_action=newAction(self, "prevPic", self.prevPic, "Ctrl+Q", "./icons/prev.png","prevPic")
-        self.viewMode_action=newAction(self, "viewMode",self.viewMode, "Ctrl+Q", "./icons/fit.png","viewMode")
-        
-        self.saveFile_action=newAction(self, "saveFile",self.saveFile, "Ctrl+Q", "./icons/save.png","saveFile")
+        self.openPic_action  =newAction(self, "openfile", self.openfile, "Ctrl+E", "./icons/open.png",   "openfile"  )
+        self.setPoint_action =newAction(self, "setPoint", self.setPoint, "Ctrl+Q", "./icons/line.png",   "drawLine"  )
+        self.drawPoint_action=newAction(self, "drawPoint",self.drawPoint,"Ctrl+W", "./icons/point.png",  "drawPoint" )
+        self.setRect_action  =newAction(self, "setRect",  self.setRect,  "Ctrl+R", "./icons/circle.png", "drawCircle")
+        self.drawRect_action =newAction(self, "drawRect", self.drawRect, "Ctrl+T", "./icons/done.png",   "drawRect"  )
+        self.nextPic_action  =newAction(self, "nextPic",  self.nextPic,  "Ctrl+E", "./icons/next.png",   "nextPic"   )
+        self.prevPic_action  =newAction(self, "prevPic",  self.prevPic,  "Ctrl+Q", "./icons/prev.png",   "prevPic"   )
+        self.viewMode_action =newAction(self, "viewMode", self.viewMode, "Ctrl+Q", "./icons/fit.png",    "viewMode"  )
+        self.saveFile_action =newAction(self, "saveFile", self.saveFile, "Ctrl+Q", "./icons/save.png",   "saveFile"  )
         
         opentoolbar=newToolBar("tool")
         opentoolbar.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
         opentoolbar.setOrientation(Qt.Vertical)
 
-        opentoolbar.addAction(self.openPic_action)
-        opentoolbar.addAction(self.setPoint_action)
-        opentoolbar.addAction(self.drawPoint_action)
-        opentoolbar.addAction(self.setRect_action)
-        opentoolbar.addAction(self.drawRect_action)
-        opentoolbar.addAction(self.nextPic_action)
-        opentoolbar.addAction(self.prevPic_action)
-        opentoolbar.addAction(self.viewMode_action)
-        opentoolbar.addAction(self.saveFile_action)
+        action_list=[(self.openPic_action)\
+        ,(self.setPoint_action)\
+        ,(self.drawPoint_action)\
+        ,(self.setRect_action)\
+        ,(self.drawRect_action)\
+        ,(self.nextPic_action)\
+        ,(self.prevPic_action)\
+        ,(self.viewMode_action)\
+        ,(self.saveFile_action)]
+
+        self.add_actios_list(opentoolbar,action_list)
 
         self.addToolBar(Qt.LeftToolBarArea,opentoolbar)
         
+        menubar=self.menuBar()
+        file_menubar=menubar.addMenu("File")
+        menubar.addMenu("help")
+        file_menubar.addAction(self.saveFile_action)
+
+
+        dock3=ruleWidget(self)  
+        dock3.setFeatures(QDockWidget.AllDockWidgetFeatures)   
+        self.addDockWidget(Qt.BottomDockWidgetArea,dock3) 
+
     def load_last_pos(self):
         if os.path.exists("config/last_pos.txt"):
             stat=QMessageBox.information(None, "care", "do you want to back to last postion!!", QMessageBox.Yes | QMessageBox.No)
@@ -81,7 +99,9 @@ class MainWindow(QMainWindow,WindowMixin):
         else:
             return 0
 
-
+    def add_actios_list(self,thetoolbar,action_list):
+        for action in action_list:
+            thetoolbar.addAction(action)
 
     def save_last_pos(self,pos):
         with open("config/last_pos.txt","w") as f:
