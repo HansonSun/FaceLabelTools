@@ -3,7 +3,7 @@ from PyQt4.QtCore import *
 import sys
 import math
 from labelPoint import *
-
+import init
 
 MODE_DRAW_POINT=0
 MODE_DRAW_REC=1
@@ -37,9 +37,7 @@ class Canvas(QWidget):
         
         self.point_vec=CrossPoint()
         self.mode = MODE_FREE
-        self.setMouseTracking(True)
-        
-        
+        self.setMouseTracking(True)      
         
     def loadPixmap(self, picfile):
         self.reset()
@@ -118,9 +116,7 @@ class Canvas(QWidget):
                 painter.drawEllipse( QPoint(point_v[i]['x'],point_v[i]['y']),int(15/Canvas.scale),int(15/Canvas.scale)  )
                 painter.drawLine(point_v[i]['x'],point_v[i]['y']-int(30/Canvas.scale),point_v[i]['x'],point_v[i]['y']+int(30/Canvas.scale))
                 painter.drawLine(point_v[i]['x']-int(30/Canvas.scale),point_v[i]['y'],point_v[i]['x']+int(30/Canvas.scale),point_v[i]['y'])
-                i=i+1
-        
-
+                i=i+1     
             
     def paintEvent(self, event):
         '''
@@ -132,8 +128,6 @@ class Canvas(QWidget):
             painter.drawPixmap( self.rect(), self.pixmap )
        
         '''
-        
-        #self.pixmap=QPixmap("000007.png")
         
         painter =QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
@@ -159,9 +153,6 @@ class Canvas(QWidget):
         painter.scale(Canvas.scale,Canvas.scale)
         painter.drawPixmap(0,0,self.pixmap)
         
-        #painter.drawPixmap( 0,0,self.pic_scaled_width,self.pic_scaled_height,self.pixmap )
-        
-    
         self.drawshape(painter,self.point_vec)
             
     def mousePressEvent(self, ev):
@@ -201,8 +192,7 @@ class Canvas(QWidget):
                         
                         #print "in point",self.point_vec.move_poiont_index
                         self.point_vec.remove_point()
-                
-                
+                            
     def wheelEvent(self, ev):
         if ev.orientation() == Qt.Vertical:
             mods=ev.modifiers()
@@ -214,8 +204,6 @@ class Canvas(QWidget):
                     if(Canvas.scale>0.04):
                         Canvas.scale-=0.02      
                 self.update()
-                
-
             
     def savepoint2file(self,img_name):
         if (len(self.point_vec)==0):
@@ -223,19 +211,20 @@ class Canvas(QWidget):
              return -1
         else:
             self.point_vec.save2file(img_name) 
-            return 1
-        
+            return 1 
                 
     def get7PointsData(self):
         text=""
         for point in self.point_vec.point_vec:
                 text+="%d %d "%(point["x"],point["y"]) 
-        return text[:-1]
+        
+        return init.from_dict_to_rule(text)
+
     
     def set7PointsData(self,data):
 
         for key,value in data.items():
-            if(key.find("rect")==0):
+            if(key.find("rect2p")==0):
                 self.setRect( value[0],value[1] )
             if(key.find("point")==0):
                 self.setPoint( value )
@@ -265,7 +254,6 @@ class Canvas(QWidget):
                 self.update()
                 
   
-    
     def scaled(self,num):
         return num*Canvas.scale  
     

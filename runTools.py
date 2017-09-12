@@ -2,7 +2,6 @@ import sys
 sys.path.append("./libs")
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
-
 from btnTools import *
 from functools import partial
 from canvas import *
@@ -10,28 +9,20 @@ from inputDlg import *
 import time
 from view_dic import  *
 from ruleWidget import *
-
+import init
+from facedetect_lib import  facetool
 
 IMG_VIEW_MODE=0
 IMG_EDIT_MODE=1
 
 
 
-class WindowMixin(object):
-    
-    def menu(self, title, actions=None):
-        menu = self.menuBar().addMenu(title)
-        if actions:
-            addActions(menu, actions)
-        return menu
-
  
-class MainWindow(QMainWindow,WindowMixin):
+class MainWindow(QMainWindow):
     def __init__(self,parent=None):
         super(MainWindow,self).__init__(parent)
         
         self.view_mode=0
-        self.pic_view_pos=0
         self.img_list=[]
         self.img_solve_mode=IMG_EDIT_MODE
 
@@ -50,9 +41,9 @@ class MainWindow(QMainWindow,WindowMixin):
         self.drawPoint_action=newAction(self, "drawPoint",self.drawPoint,"Ctrl+W", "./icons/point.png",  "drawPoint" )
         self.setRect_action  =newAction(self, "setRect",  self.setRect,  "Ctrl+R", "./icons/circle.png", "drawCircle")
         self.drawRect_action =newAction(self, "drawRect", self.drawRect, "Ctrl+T", "./icons/done.png",   "drawRect"  )
+        self.viewMode_action =newAction(self, "viewMode", self.viewMode, "Ctrl+Q", "./icons/fit.png",    "viewMode"  )
         self.nextPic_action  =newAction(self, "nextPic",  self.nextPic,  "Ctrl+E", "./icons/next.png",   "nextPic"   )
         self.prevPic_action  =newAction(self, "prevPic",  self.prevPic,  "Ctrl+Q", "./icons/prev.png",   "prevPic"   )
-        self.viewMode_action =newAction(self, "viewMode", self.viewMode, "Ctrl+Q", "./icons/fit.png",    "viewMode"  )
         self.saveFile_action =newAction(self, "saveFile", self.saveFile, "Ctrl+Q", "./icons/save.png",   "saveFile"  )
         
         opentoolbar=newToolBar("tool")
@@ -64,37 +55,49 @@ class MainWindow(QMainWindow,WindowMixin):
         ,(self.drawPoint_action)\
         ,(self.setRect_action)\
         ,(self.drawRect_action)\
+        ,(self.viewMode_action)\
         ,(self.nextPic_action)\
         ,(self.prevPic_action)\
-        ,(self.viewMode_action)\
         ,(self.saveFile_action)]
+
 
         self.add_actios_list(opentoolbar,action_list)
 
         self.addToolBar(Qt.LeftToolBarArea,opentoolbar)
+
+        self.nextPic_action.setEnabled(0)
+        self.prevPic_action.setEnabled(0)
+        self.saveFile_action.setEnabled(0)
+        self.drawRect_action.setEnabled(0)
+        self.drawPoint_action.setEnabled(0)
+        self.setRect_action.setEnabled(0)
+        self.setPoint_action.setEnabled(0)
+
         
+        clear_list_action=newAction(self, "generate", self.Generate_clear_list, "Ctrl+Q", "./icons/save.png",   "generate clear label file"  )
+
         menubar=self.menuBar()
-        file_menubar=menubar.addMenu("File")
-        menubar.addMenu("help")
-        file_menubar.addAction(self.saveFile_action)
+        test_menuar  = menubar.addMenu("generate")
+        test_menuar.addAction(clear_list_action)
 
-
-        dock3=ruleWidget(self)  
-        dock3.setFeatures(QDockWidget.AllDockWidgetFeatures)   
-        self.addDockWidget(Qt.BottomDockWidgetArea,dock3) 
+        #test_menuar.trigger.connect(self.Generate_clear_list)
+        #dock3=ruleWidget(self)  
+        #dock3.setFeatures(QDockWidget.AllDockWidgetFeatures)   
+        #self.addDockWidget(Qt.BottomDockWidgetArea,dock3) 
+        #dock3.setVisible(0)
 
     def load_last_pos(self):
-        if os.path.exists("config/last_pos.txt"):
+        if os.path.exists("./result/tmp/~last_pos.txt"):
             stat=QMessageBox.information(None, "care", "do you want to back to last postion!!", QMessageBox.Yes | QMessageBox.No)
             if stat== QMessageBox.Yes:
-                with open("config/last_pos.txt","r") as f:
+                with open("./result/tmp/~last_pos.txt","r") as f:
                     print "read"
                     pos=f.read()
                     print pos
                     print "load position %s sucessfully"%pos
                     return int(pos)
             else: 
-                os.remove("config/last_pos.txt")
+                os.remove("./result/tmp/~last_pos.txt")
                 return 0
         else:
             return 0
@@ -104,10 +107,21 @@ class MainWindow(QMainWindow,WindowMixin):
             thetoolbar.addAction(action)
 
     def save_last_pos(self,pos):
-        with open("config/last_pos.txt","w") as f:
+        with open("./result/tmp/~last_pos.txt","w") as f:
             f.write(str(pos))
 
     def openfile(self):
+        self.openPic_action.setEnabled(0)
+        self.nextPic_action.setEnabled(0)
+        self.prevPic_action.setEnabled(0)
+        self.saveFile_action.setEnabled(1)
+
+        self.drawRect_action.setEnabled(1)
+        self.drawPoint_action.setEnabled(1)
+        self.setRect_action.setEnabled(1)
+        self.setPoint_action.setEnabled(1)
+        self.viewMode_action.setEnabled(0)
+
         self.view_mode=1
         self.update()
         filename=QFileDialog.getOpenFileName(self,"sss","./","image file (*.png *.jpg)")
@@ -165,7 +179,8 @@ class MainWindow(QMainWindow,WindowMixin):
                         QMessageBox.warning(self, "infor", "save sucess")
             elif self.img_solve_mode==IMG_VIEW_MODE:
                 canvas7points= self.canvas.get7PointsData()
-                if len(self.canvas.get7PointsData().split(" ")) ==14:
+
+                if len(canvas7points) ==6:
                     self.viewdict.set_data(self.pic_view_pos, canvas7points)
                     QMessageBox.warning(self, "infor", "save sucess")
                 else:
@@ -204,14 +219,22 @@ class MainWindow(QMainWindow,WindowMixin):
             self.save_last_pos(self.pic_view_pos)    
     
     def viewMode(self):
+        self.openPic_action.setEnabled(0)
+        self.nextPic_action.setEnabled(1)
+        self.prevPic_action.setEnabled(1)
+        self.saveFile_action.setEnabled(1)
 
+        ruledlg=ruleWidget()
+        ruledlg.show()
+        ruledlg.exec_()
 
-        ret_sta=QMessageBox.information(None, "care", "do you want reset mode!!", QMessageBox.Yes | QMessageBox.No)
-        if ret_sta== QMessageBox.Yes:
+        if init.save_change==1:
+            init.save_change=0
             self.pic_view_pos=self.load_last_pos()
 
             self.img_solve_mode=IMG_VIEW_MODE
-            self.viewdict=ViewDict("testImageList.txt","input_rules/xy_BBox_5PointsLandmark.txt",VIEW_MODE_ALL) 
+
+            self.viewdict=ViewDict(VIEW_MODE_ALL) 
             print self.viewdict[self.pic_view_pos]["path"]
             self.canvas.loadPixmap( self.viewdict[self.pic_view_pos]["path"] ) 
             
@@ -224,10 +247,31 @@ class MainWindow(QMainWindow,WindowMixin):
             return 
         
     def saveFile(self):
-        self.viewdict.save_file()
+        self.viewdict.save_file( )
         QMessageBox.warning(self, "infor", "save sucess")
         #self.canvas.set7PointsData()
-        
+    
+    def Generate_clear_list(self):
+        with open("result/empty_label_file/output.txt","a") as f:
+            absdirname=QFileDialog.getExistingDirectory(self,"choose directory","./")
+            absdirname=str(absdirname)
+            absdirname=absdirname.strip()
+            dirname=absdirname.split("/")[-1]
+            print dirname
+
+            for root,subdir,files in os.walk(absdirname):
+                for img_file in files:
+                    tmp_dir=root[root.find(dirname):]
+                    f.write("%s -1\n"%(os.path.join(tmp_dir,img_file) ))
+            QMessageBox.information(self,"status","Generate sucess")
+                    #print tmp_dir
+                    #print os.path.join(tmp_dir,img_file)
+
+        #detector=facetool()
+        #print detector.findFaces("Aaron_Eckhart_0001.jpg",0)
+        #print detector.getAbs5pFromImg("Aaron_Eckhart_0001.jpg")
+
+
 app=QApplication(sys.argv)
 win=MainWindow()
 win.show()

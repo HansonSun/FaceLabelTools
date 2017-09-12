@@ -1,0 +1,1 @@
+rect,point,point,point,point,point
