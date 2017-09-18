@@ -14,7 +14,7 @@ class ruleWidget(QDialog):
 	def initUI(self):
 
 		labelfile_label=QLabel("label file")
-		self.labelfile_textedit=QTextEdit("test")
+		self.labelfile_textedit=QTextEdit("")
 		labelfile_btn=QPushButton(".")
 		self.labelfile_textedit.setFixedHeight(50)
 

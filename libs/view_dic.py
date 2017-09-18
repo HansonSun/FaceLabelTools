@@ -111,8 +111,10 @@ class ViewDict(object):
 
 
     def save_file(self):
-        
-        with open("result/label_file_output/%s_new.txt"%self.label_file_name,"w") as f:
+        file_only_name=self.label_file_name.split('.')[0]
+        cur_time=time.strftime("%m_%d_%H_%M", time.localtime()) 
+
+        with open("result/label_file_output/%s_%s.txt"%(file_only_name,cur_time),"w") as f:
             output=""
             for item in self.all_data_list:
                 rule_index=0
@@ -145,7 +147,7 @@ class ViewDict(object):
 
         
     def convert_rect2p_to_rect(self,points):
-        return "%d %d %d %d "%(points[0][0],points[0][1],points[1][0]-points[0][0],points[1][1]-ponts[0][1])
+        return "%d %d %d %d "%(points[0][0],points[0][1],points[1][0]-points[0][0],points[1][1]-points[0][1])
 
     def convert_rect2p_to_xy_bbox(self,points):
         return "%d %d %d %d "%(points[0][0],points[1][0],points[0][1],points[1][1])
