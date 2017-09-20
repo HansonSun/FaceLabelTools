@@ -217,7 +217,7 @@ class Canvas(QWidget):
         text=""
         for point in self.point_vec.point_vec:
                 text+="%d %d "%(point["x"],point["y"]) 
-        
+
         return init.from_dict_to_rule(text)
 
     
