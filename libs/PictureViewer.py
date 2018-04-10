@@ -22,6 +22,8 @@ class PictureViewer(object):
 
         #get label file's dir and basename
         self.label_file_dir,self.label_file_name=os.path.split( init.glb_labelfile_path )
+        self.label_file_name=self.label_file_name.split("->")[0]+".txt"
+        print self.label_file_name
 
         with open(init.glb_labelfile_path ,"r") as f:
         
@@ -117,7 +119,7 @@ class PictureViewer(object):
         file_only_name=self.label_file_name.split('.')[0]
         cur_time=time.strftime("%m_%d_%H_%M", time.localtime()) 
 
-        with open("result/label_file_output/%s_%s.txt"%(file_only_name,cur_time),"a+") as f:
+        with open("result/label_file_output/%s->%s.txt"%(file_only_name,cur_time),"a+") as f:
             
             for item in self.all_data_list:
                 output=""
@@ -141,6 +143,9 @@ class PictureViewer(object):
                                         output+=self.convert_rect2p_to_rect(item[key])
                                     elif( init.glb_output_rule_list[rule_index]=='xy_bbox'):
                                         output+=self.convert_rect2p_to_xy_bbox(item[key])
+                                    elif( init.glb_output_rule_list[rule_index]=='rect2p'):
+                                        output+=self.convert_rect2p_to_rect2p(item[key])
+                                        
                                     rule_index+=1
 
                                 if(rule_index==len(init.glb_output_rule_list) ):
@@ -156,6 +161,9 @@ class PictureViewer(object):
 
     def convert_rect2p_to_xy_bbox(self,points):
         return "%d %d %d %d "%(points[0][0],points[1][0],points[0][1],points[1][1])
+
+    def convert_rect2p_to_rect2p(self,points):
+        return "%d %d %d %d "%(points[0][0],points[0][1],points[1][0],points[1][1])
 
     def get_data(self,key):
         item=self.all_data_list[self.display_data_index[key]]

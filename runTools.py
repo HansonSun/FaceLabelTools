@@ -56,8 +56,8 @@ class MainWindow(QMainWindow):
         #add action to toolbar
         action_list=[(self.openPic_action)\
         ,(self.viewMode_action)\
-        ,(self.nextPic_action)\
         ,(self.prevPic_action)\
+        ,(self.nextPic_action)\
         ,(self.saveFile_action)]
 
         self.add_actios_list(filetoolbar,action_list)
@@ -220,6 +220,7 @@ class MainWindow(QMainWindow):
             
 
         print "total num:",self.total_num,"  left num:",self.total_num-self.pic_view_pos
+        print self.pictureviewer[self.pic_view_pos]["relpath"]
         self.save_last_pos(self.pic_view_pos)
         
     def prevPic(self):
@@ -232,6 +233,7 @@ class MainWindow(QMainWindow):
 
 
         print "total num:",self.total_num,"   left num:",self.total_num-self.pic_view_pos
+        print self.pictureviewer[self.pic_view_pos]["relpath"]
         self.save_last_pos(self.pic_view_pos)    
     
     def viewFile(self):
